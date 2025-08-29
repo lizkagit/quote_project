@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Случайная цитата</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .quote { background: #f9f9f9; padding: 20px; margin: 20px 0; border-left: 5px solid #ccc; }
+        .actions { margin: 10px 0; }
+        .btn { padding: 5px 15px; margin: 0 5px; cursor: pointer; }
+        .like { background: #4CAF50; color: white; }
+        .dislike { background: #f44336; color: white; }
+        .disabled { opacity: 0.5; cursor: not-allowed; }
+        .nav { margin: 20px 0; }
+        .message { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+    </style>
+</head>
+<body>
+    <h1>Случайная цитата</h1>
+    
+    <div class="nav">
+        <a href="{% url 'add_quote' %}">Добавить цитату</a> |
+        <a href="{% url 'add_source' %}">Добавить источник</a> |
+        <a href="{% url 'popular_quotes' %}">Популярные цитаты</a>
+    </div>
+
+    {% if quote %}
+    <div class="quote">
+        <p>"{{ quote.text }}"</p>
+        <p><strong>Источник:</strong> {{ quote.source }}</p>
+        <p><strong>Просмотров:</strong> {{ quote.views_count }}</p>
+        <p><strong>Лайки:</strong> <span id="likes-count">{{ quote.likes }}</span></p>
+        <p><strong>Дизлайки:</strong> <span id="dislikes-count">{{ quote.dislikes }}</span></p>
+    </div>
+    
+    <div class="actions">
+        <button class="btn like {% if user_voted %}disabled{% endif %}" 
+                onclick="likeQuote({{ quote.id }})" 
+                {% if user_voted %}disabled{% endif %}>
+            👍
+        </button>
+        <button class="btn dislike {% if user_voted %}disabled{% endif %}" 
+                onclick="dislikeQuote({{ quote.id }})" 
+                {% if user_voted %}disabled{% endif %}>
+            👎
+        </button>
+    </div>
+    
+    <div id="message" class="message" style="display: none;"></div>
+    
+    {% else %}
+    <p>Цитат пока нет. <a href="{% url 'add_quote' %}">Добавьте первую!</a></p>
+    {% endif %}
+
+    <p>Всего просмотров: {{ total_views }}</p>
+
+    <script>
+    function showMessage(text, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = text;
+        messageDiv.className = `message ${type}`;
+        messageDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 3000);
+    }
+    
+    function likeQuote(quoteId) {
+        fetch(`/like/${quoteId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('likes-count').textContent = data.likes;
+                    document.getElementById('dislikes-count').textContent = data.dislikes;
+                    
+                    // Блокируем кнопки после голосования
+                    document.querySelectorAll('.btn').forEach(btn => {
+                        btn.classList.add('disabled');
+                        btn.disabled = true;
+                    });
+                    
+                    showMessage('Спасибо за ваш голос!', 'success');
+                } else {
+                    showMessage(data.message || 'Ошибка при голосовании', 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Ошибка соединения', 'error');
+            });
+    }
+    
+    function dislikeQuote(quoteId) {
+        fetch(`/dislike/${quoteId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('likes-count').textContent = data.likes;
+                    document.getElementById('dislikes-count').textContent = data.dislikes;
+                    
+                    // Блокируем кнопки после голосования
+                    document.querySelectorAll('.btn').forEach(btn => {
+                        btn.classList.add('disabled');
+                        btn.disabled = true;
+                    });
+                    
+                    showMessage('Спасибо за ваш голос!', 'success');
+                } else {
+                    showMessage(data.message || 'Ошибка при голосовании', 'error');
+                }
+            })
+            .catch(error => {
+                showMessage('Ошибка соединения', 'error');
+            });
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Популярные цитаты</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .quote { background: #f9f9f9; padding: 20px; margin: 20px 0; border-left: 5px solid #ccc; }
+        .quote-labels {
+            position: relative;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            /* width: 180px; */
+            border-left: 4px solid #6c5ce7;
+        }
+        
+        .quote-label {
+            margin-bottom: 12px;
+            padding: 8px;
+            border-radius: 6px;
+            background-color: rgba(236, 240, 241, 0.7);
+            transition: all 0.3s ease;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #2d3436;
+        }
+        .nav { margin: 20px 0; }
+        .stats { color: #666; font-size: 14px; }
+        
+        /* Стили для дашборда */
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 30px 0; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); text-align: center; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #2c3e50; }
+        .stat-label { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
+        
+        .filters { background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .filter-group { margin: 10px 0; }
+        
+        .chart-container { 
+            display: flex;
+            gap: 0 50px;
+            margin: 30px 0; background: white; padding: 30px 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .bar-chart { display: flex; height: 200px; align-items: flex-end; gap: 5px; }
+        .bar { background: #3498db; margin: 0 2px; position: relative; min-width: 20px; }
+        .bar-label { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 12px; }
+        
+        .positive { color: #27ae60; }
+        .negative { color: #e74c3c; }
+        .neutral { color: #95a5a6; }
+    </style>
+</head>
+<body>
+    <h1>📊 Дашборд популярных цитат</h1>
+    
+    <div class="nav">
+        <a href="{% url 'random_quote' %}">🎲 Случайная цитата</a> |
+        <a href="{% url 'add_quote' %}">➕ Добавить цитату</a> |
+        <a href="{% url 'add_source' %}">📚 Добавить источник</a>
+    </div>
+
+    <!-- Мини-дашборд -->
+    <div class="dashboard">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_quotes }}</div>
+            <div class="stat-label">Всего цитат</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_sources }}</div>
+            <div class="stat-label">Источников</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_likes }}</div>
+            <div class="stat-label">Всего лайков</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ total_views }}</div>
+            <div class="stat-label">Всего просмотров</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ avg_likes|floatformat:1 }}</div>
+            <div class="stat-label">Среднее лайков</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ engagement_rate|floatformat:1 }}%</div>
+            <div class="stat-label">Вовлеченность</div>
+        </div>
+    </div>
+
+ 
+<div class="chart-container">
+    <div class="chart_container__info">
+
+        <h3>📈 Топ-5 цитат по лайкам</h3>
+        <div class="bar-chart">
+            {% for quote in top_5_quotes %}
+            <div class="bar" style="height: {{ quote.bar_height }}px;" title="{{ quote.text|truncatewords:5 }}">
+                <div class="bar-label">{{ quote.likes }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="quote-labels">
+        {% for quote in top_5_quotes %}
+        <div class="quote-label">
+            #{{ forloop.counter }}<br>
+            {{ quote.text|truncatewords:6}}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+ 
+    <!-- Список цитат -->
+    <h2>🏆 10 самых популярных цитат</h2>
+    
+    {% if quotes %}
+        {% for quote in quotes %}
+        <div class="quote">
+            <p>"{{ quote.text }}"</p>
+            <p><strong>📚 Источник:</strong> {{ quote.source }} ({{ quote.source.get_type_display }})</p>
+            <div class="stats">
+                <span class="positive">👍 {{ quote.likes }}</span> | 
+                <span class="negative">👎 {{ quote.dislikes }}</span> | 
+                <span class="neutral">👀 {{ quote.views_count }} просмотров</span> |
+                <span>⚖️ Вес: {{ quote.weight }}</span> |
+                <span>📅 {{ quote.created_at|date:"d.m.Y" }}</span>
+            </div>
+            {% if quote.like_ratio > 70 %}
+                <div style="color: #27ae60; font-weight: bold;">⭐ Высокий рейтинг!</div>
+            {% elif quote.like_ratio < 30 %}
+                <div style="color: #e74c3c;">⚠️ Низкий рейтинг</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <p>Пока нет цитат. <a href="{% url 'add_quote' %}">Добавьте первую!</a></p>
+    {% endif %}
+
+</body>
+</html>
