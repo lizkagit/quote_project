@@ -40,8 +40,13 @@ class Quote(models.Model):
     def clean(self):
         # Проверяем, что у источника не больше 3 цитат
         if self.pk is None:  # только для новых объектов
+            # Проверяем существование такой же цитаты
+            if Quote.objects.filter(text=self.text, source=self.source).exists():
+                raise ValidationError("Цитата с таким текстом и источником уже существует")
+            
+            # Проверяем ограничение на количество цитат у источника
             if Quote.objects.filter(source=self.source).count() >= 3:
-                raise ValidationError("У одного источника не может быть больше 3 цитат")
+                raise ValidationError("У одного источника не может быть больше 3 цитат")    
     
     def save(self, *args, **kwargs):
         self.clean()
@@ -65,3 +70,4 @@ class Quote(models.Model):
     def __str__(self):
         return f'"{self.text[:50]}..." - {self.source}'
     
+
